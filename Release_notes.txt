@@ -1,0 +1,81 @@
+
+PROJECT: Anomaly Detect
+
+RELEASE DESCRIPTION:
+
+   This is the initial release for Anomaly Detect, a simple anomaly detector  
+   which processes CSV files with records/rows in the following format: 
+   (AccountId, MerchantId, TransactionAmount) and identifies anomalies based
+   on the use of simple statistics. Anomalies are detected when the magnitude 
+   of the z-score (number of standard deviations from the mean) of a transaction 
+   amount exceeds a user-specified threshold and the information is logged to the
+   user-specified output file.       
+
+   Statistics for all AccountIds and MerchantIds are tracked, along with global
+   statistics and these are all calculated incrementally in order to be memory-efficient
+   and support online/streaming applications. Due to the potentially large number
+   of distinct IDs being tracked, a common issue is to have a small number of samples
+   for a given Id, and in these cases the global statistics (across all customers/merchants)
+   are used in the anomaly decision process until a sufficient number of "local" samples
+   associated the given Id have been accumulated, and thereafter the Id-specific statistics
+   are used.     
+   
+
+
+FILES INCLUDED:
+   anomaly_detect.py:     The anomaly detection main program
+   stats_accumulator.py:  Statistics Accumulator class used by anomaly_detect.py 
+   stats_test.py:         Tests correctness of calculations used in stats_accumulator     
+   run_anomaly_detect.sh: Script giving example of how to run in normal mode   
+   run_anomaly_detect_verbose.sh: Script giving example of how to run in verbose mode    
+
+
+USAGE:
+
+Running Anomaly Detect:
+=======================
+The usage for anomaly_detect.py is as follows:
+
+python anomaly_detect.py [-h] [-z Z_THRESH] [-n NUM_SAMPLES_LOCAL] [-v]
+                         input_file log_file
+
+positional arguments:
+  input_file            input CSV file with format: AccountId, MerchantId,
+                        Transaction Amount
+  log_file              output log file to write anomaly info
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -z Z_THRESH, --z_thresh Z_THRESH
+                        z-score threshold beyond which values are considered
+                        anomalous
+  -n NUM_SAMPLES_LOCAL, --num_samples_local NUM_SAMPLES_LOCAL
+                        number of samples needed to switch from using global
+                        statistics for anomaly detection to local (Id-based)
+                        statistics
+  -v, --verbose         enable verbose mode
+
+
+examples:
+    python anomaly_detect.py -z 3 -n 10 my_csv_file.csv  my_output_log_file.log
+    python anomaly_detect.py -v my_csv_file.csv  my_output_log_file.log
+    sh run_anomaly_detect.sh
+    sh run_anomaly_detect_verbose.sh
+    
+
+Running stats_test.py 
+======================
+The usage for stats_test.py is as follows: 
+python stats_test.py
+
+(note: this is just a unit test for stats_accumulator.py)
+
+
+NOTES:
+   (1) Verbose mode for anomaly_detect.py significantly degrades the performance due to the volume of prints 
+       (statistics for all customers on each transaction) and is recommended to be used only for data exploration
+   (2) A current known limitation is that the logged anomalies do not indicate whether local or global statistics
+       were used in the decision. This may be added in a future release. 
+   (3) The following statistics are tracked: (mean,standard deviation,min,max) but only (mean, standard deviation) 
+       are currently used in the anomaly detection decision.
+
